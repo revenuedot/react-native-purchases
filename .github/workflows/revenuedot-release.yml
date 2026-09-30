@@ -166,6 +166,8 @@ jobs:
           node -e 'const f="package.json",p=JSON.parse(require("fs").readFileSync(f));p.workspaces=p.workspaces.filter(w=>!/example|e2e/.test(w));require("fs").writeFileSync(f,JSON.stringify(p,null,2)+"\n")'
           # package.json aliases differ from upstream's yarn.lock, so the lockfile cannot be immutable.
           YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --mode=skip-build
+          # Tests read yarn.lock (upstream's release version patterns), so keep the committed one.
+          git checkout -- yarn.lock
 
       - name: Build
         run: |
