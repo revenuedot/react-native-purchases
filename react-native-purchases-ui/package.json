@@ -1,8 +1,8 @@
 {
-  "name": "react-native-purchases-ui",
+  "name": "@revenuedot/react-native-purchases-ui",
   "title": "React Native Purchases UI",
   "version": "10.10.2",
-  "description": "React Native in-app purchases and subscriptions made easy. Supports iOS and Android.",
+  "description": "React Native in-app purchases and subscriptions made easy. Supports iOS and Android. (Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.)",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
   "types": "lib/typescript/src/index.d.ts",
@@ -37,8 +37,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/revenuecat/react-native-purchases.git",
-    "baseUrl": "https://github.com/revenuecat/react-native-purchases"
+    "url": "git+https://github.com/revenuedot/react-native-purchases.git",
+    "baseUrl": "https://github.com/revenuedot/react-native-purchases"
   },
   "keywords": [
     "react-native",
@@ -49,7 +49,7 @@
     "Apple",
     "Android"
   ],
-  "author": "RevenueCat, Inc.",
+  "author": "RevenueDot (https://revenuedot.app)",
   "license": "MIT",
   "readmeFilename": "README.md",
   "devDependencies": {
@@ -124,6 +124,6 @@
     ]
   },
   "dependencies": {
-    "@revenuecat/purchases-typescript-internal": "19.3.1"
+    "@revenuecat/purchases-typescript-internal": "npm:@revenuedot/purchases-typescript-internal@19.4.1"
   }
 }
