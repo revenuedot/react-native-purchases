@@ -17,14 +17,14 @@ files_with_version_number = {
     './src/browser/nativeModule.ts' => ['packageVersion = \'{x}\'']
 }
 files_to_update_phc_version = {
-    'RNPurchases.podspec' => ['"PurchasesHybridCommon", \'{x}\''],
-    'react-native-purchases-store-galaxy/android/build.gradle' => ['com.revenuecat.purchases:purchases-hybrid-common-store-galaxy:{x}'],
-    'react-native-purchases-ui/RNPaywalls.podspec' => ['"PurchasesHybridCommonUI", \'{x}\''],
-    'android/build.gradle' => ['com.revenuecat.purchases:purchases-hybrid-common:{x}'],
-    'react-native-purchases-ui/android/build.gradle' => ['com.revenuecat.purchases:purchases-hybrid-common-ui:{x}'],
-    'package.json' => ['"@revenuecat/purchases-typescript-internal": "{x}"', '"@revenuecat/purchases-js-hybrid-mappings": "{x}"'],
-    'react-native-purchases-store-galaxy/package.json' => ['"@revenuecat/purchases-typescript-internal": "{x}"'],
-    'react-native-purchases-ui/package.json' => ['"@revenuecat/purchases-typescript-internal": "{x}"']
+    'RNPurchases.podspec' => ['"RevenueDotPurchasesHybridCommon", \'{x}\''],
+    'react-native-purchases-store-galaxy/android/build.gradle' => ['app.revenuedot.purchases:purchases-hybrid-common-store-galaxy:{x}'],
+    'react-native-purchases-ui/RNPaywalls.podspec' => ['"RevenueDotPurchasesHybridCommonUI", \'{x}\''],
+    'android/build.gradle' => ['app.revenuedot.purchases:purchases-hybrid-common:{x}'],
+    'react-native-purchases-ui/android/build.gradle' => ['app.revenuedot.purchases:purchases-hybrid-common-ui:{x}'],
+    'package.json' => ['"@revenuecat/purchases-typescript-internal": "npm:@revenuedot/purchases-typescript-internal@{x}"', '"@revenuecat/purchases-js-hybrid-mappings": "npm:@revenuedot/purchases-js-hybrid-mappings@{x}"'],
+    'react-native-purchases-store-galaxy/package.json' => ['"@revenuecat/purchases-typescript-internal": "npm:@revenuedot/purchases-typescript-internal@{x}"'],
+    'react-native-purchases-ui/package.json' => ['"@revenuecat/purchases-typescript-internal": "npm:@revenuedot/purchases-typescript-internal@{x}"']
 }
 files_to_update_on_latest_stable_releases = {
   './scripts/docs/index.html' => ['react-native-purchases-docs/{x}/']
@@ -301,17 +301,17 @@ end
 def get_phc_version
   Dir.chdir(get_root_folder) do
     android_phc_version = File.read("android/build.gradle")
-      .match("[\"']com.revenuecat.purchases:purchases-hybrid-common:(.*)[\"']")
+      .match("[\"']app.revenuedot.purchases:purchases-hybrid-common:(.*)[\"']")
       .captures[0]
     UI.user_error!("Android PHC version not found.") if android_phc_version.nil?
 
     android_phc_ui_version = File.read("react-native-purchases-ui/android/build.gradle")
-      .match("[\"']com.revenuecat.purchases:purchases-hybrid-common-ui:(.*)[\"']")
+      .match("[\"']app.revenuedot.purchases:purchases-hybrid-common-ui:(.*)[\"']")
       .captures[0]
     UI.user_error!("Android PHC UI version not found.") if android_phc_ui_version.nil?
 
     android_phc_store_galaxy_version = File.read("react-native-purchases-store-galaxy/android/build.gradle")
-      .match("[\"']com.revenuecat.purchases:purchases-hybrid-common-store-galaxy:(.*)[\"']")
+      .match("[\"']app.revenuedot.purchases:purchases-hybrid-common-store-galaxy:(.*)[\"']")
       .captures[0]
     UI.user_error!("Android PHC Store Galaxy version not found.") if android_phc_store_galaxy_version.nil?
 

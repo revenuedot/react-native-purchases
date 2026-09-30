@@ -8,15 +8,15 @@ Pod::Spec.new do |spec|
   spec.version      = package['version']
 
   spec.authors      = package['author']
-  spec.homepage     = "https://github.com/RevenueCat/react-native-purchases"
+  spec.homepage     = "https://github.com/revenuedot/react-native-purchases"
   spec.license      = package['license']
   spec.platform     = :ios, "13.0"
 
-  spec.source       = { :git => "https://github.com/RevenueCat/react-native-purchases.git" }
+  spec.source       = { :git => "https://github.com/revenuedot/react-native-purchases.git" }
   spec.source_files = "ios/**/*.{h,m,swift}"
   spec.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
 
   spec.dependency   "React-Core"
-  spec.dependency   "PurchasesHybridCommonUI", '19.4.1'
+  spec.dependency   "RevenueDotPurchasesHybridCommonUI", '19.4.1'
   spec.swift_version    = '5.7'
 end
