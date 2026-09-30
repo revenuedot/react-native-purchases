@@ -166,8 +166,6 @@ jobs:
           node -e 'const f="package.json",p=JSON.parse(require("fs").readFileSync(f));p.workspaces=p.workspaces.filter(w=>!/example|e2e/.test(w));require("fs").writeFileSync(f,JSON.stringify(p,null,2)+"\n")'
           # package.json aliases differ from upstream's yarn.lock, so the lockfile cannot be immutable.
           YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --mode=skip-build
-          # Tests read yarn.lock (upstream's release version patterns), so keep the committed one.
-          git checkout -- yarn.lock
 
       - name: Build
         run: |
@@ -177,7 +175,12 @@ jobs:
           (cd react-native-purchases-store-galaxy && yarn prepare)
 
       - name: Unit tests
-        run: yarn test --maxWorkers=2 --silent
+        run: |
+          set -euo pipefail
+          # A test reads yarn.lock against upstream's release version patterns, so run it on the committed lockfile
+          # (jest directly: yarn itself refuses to run with a lockfile that does not match the install).
+          git checkout -- yarn.lock
+          ./node_modules/.bin/jest --maxWorkers=2 --silent
 
       - name: Restore the published package.json files
         run: |
