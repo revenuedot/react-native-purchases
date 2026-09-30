@@ -2,7 +2,7 @@
   "note": "Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.",
   "pipeline": "https://github.com/revenuedot/revenuedot/tree/main/scripts/forks",
   "rules": "scripts/forks/rules/react-native-purchases.json",
-  "rulesSha256": "767a0ca44fc77b8dcb55dda013834d231b07293f045d38c176e3b40334a83b3f",
+  "rulesSha256": "3c3202284e378eaa72f77a0c0bdc0cce73f521b320725cbc6a215c600e1b25c7",
   "upstream": {
     "repo": "https://github.com/RevenueCat/react-native-purchases",
     "mergeBase": "2550814232b952ee9f5dbb7aaaf0c63b14c68bbe"
