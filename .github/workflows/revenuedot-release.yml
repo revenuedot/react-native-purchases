@@ -1,0 +1,206 @@
+# RevenueDot release: publishes @revenuedot/react-native-purchases, @revenuedot/react-native-purchases-ui and @revenuedot/react-native-purchases-store-galaxy to npm with trusted publishing (OIDC, no token).
+# A push of tag `<version>-revenuedot` publishes. A push to a `revenuedot/release-*` branch, or a manual run with
+# dry_run=true, builds, tests and runs `npm publish --dry-run`. Versions already on the registry are skipped, so reruns
+# are safe. The `native-artifacts` job blocks a real publish until every pinned native artifact exists: the CocoaPods
+# pods and Maven Central artifacts of purchases-hybrid-common and the @revenuedot npm packages this one
+# depends on. On a dry run it only warns, and unpublished @revenuedot npm dependencies are replaced for the build and
+# tests by the identical upstream @revenuecat release (the published package.json keeps our aliases).
+# Fork pipeline: https://github.com/revenuedot/revenuedot/tree/main/scripts/forks
+name: RevenueDot release
+
+on:
+  push:
+    tags: ["*-revenuedot"]
+    branches: ["revenuedot/release-*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build, test and run npm publish --dry-run only"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: revenuedot-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || (github.event_name == 'push' && github.ref_type != 'tag') }}
+  HUSKY: "0"
+
+jobs:
+  native-artifacts:
+    name: Pinned native artifacts exist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Check CocoaPods trunk, Maven Central and npm
+        env:
+          PIN_FILES: >-
+            RNPurchases.podspec react-native-purchases-ui/RNPaywalls.podspec android/build.gradle react-native-purchases-ui/android/build.gradle react-native-purchases-store-galaxy/android/build.gradle package.json react-native-purchases-ui/package.json react-native-purchases-store-galaxy/package.json
+        run: |
+          set -euo pipefail
+          # One line per pinned artifact: <kind> <name> <version>
+          node - $PIN_FILES > "$RUNNER_TEMP/pins.txt" <<'EOF'
+          const fs = require("fs");
+          const res = [
+            ["pod", /(RevenueDotPurchasesHybridCommon(?:UI)?)["']?(?:,\s*|\s+spec=)["']([^"']+)["']/g],
+            ["maven", /app\.revenuedot\.purchases:(purchases-hybrid-common[a-z-]*):([^'"\s]+)/g],
+            ["spm", /github\.com\/(revenuedot\/purchases-hybrid-common)\.git", exact: "([^"]+)"/g],
+            ["npm", /"npm:(@revenuedot\/[^@"]+)@([^"]+)"/g],
+          ];
+          const out = new Set();
+          for (const f of process.argv.slice(2)) {
+            const text = fs.readFileSync(f, "utf8");
+            for (const [kind, re] of res) for (const m of text.matchAll(re)) out.add(`${kind} ${m[1]} ${m[2]}`);
+          }
+          if (!out.size) throw new Error("no pins found in " + process.argv.slice(2).join(" "));
+          console.log([...out].sort().join("\n"));
+          EOF
+          missing=0
+          { echo "### Pinned artifacts"; echo; } >> "$GITHUB_STEP_SUMMARY"
+          while read -r kind name ver; do
+            ok=false
+            case "$kind" in
+              pod)
+                where="CocoaPods pod $name $ver (https://trunk.cocoapods.org/api/v1/pods/$name)"
+                code=$(curl -s -o "$RUNNER_TEMP/pod.json" -w '%{http_code}' "https://trunk.cocoapods.org/api/v1/pods/$name" || true)
+                if [ "$code" = 200 ] && jq -e --arg v "$ver" 'any(.versions[]; .name == $v)' "$RUNNER_TEMP/pod.json" >/dev/null; then ok=true; fi ;;
+              maven)
+                url="https://repo1.maven.org/maven2/app/revenuedot/purchases/$name/$ver/$name-$ver.pom"
+                where="Maven Central app.revenuedot.purchases:$name:$ver ($url)"
+                if curl -fsIL -o /dev/null "$url"; then ok=true; fi ;;
+              spm)
+                where="SPM tag $ver in https://github.com/$name"
+                if git ls-remote --exit-code --tags "https://github.com/$name" "refs/tags/$ver" >/dev/null; then ok=true; fi ;;
+              npm)
+                where="npm $name@$ver (https://www.npmjs.com/package/$name/v/$ver)"
+                if npm view "$name@$ver" version >/dev/null 2>&1; then ok=true; fi ;;
+            esac
+            if $ok; then echo "ok       $where"; echo "- ok: $where" >> "$GITHUB_STEP_SUMMARY"
+            else echo "MISSING  $where"; echo "- **missing**: $where" >> "$GITHUB_STEP_SUMMARY"; missing=$((missing + 1)); fi
+          done < "$RUNNER_TEMP/pins.txt"
+          if [ "$missing" -gt 0 ]; then
+            msg="$missing pinned artifact(s) are not published yet (list above). Release purchases-hybrid-common's pods, Maven artifacts and npm packages first, or the published package will not install."
+            if [ "$DRY_RUN" = "true" ]; then echo "::warning::$msg (dry run continues)"; else echo "::error::$msg"; exit 1; fi
+          fi
+
+  release:
+    needs: native-artifacts
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: npm >= 11.5.1 (trusted publishing)
+        run: |
+          npm install -g npm@latest
+          npm --version
+          corepack enable
+
+      - name: Check the tag matches the package versions
+        run: |
+          set -euo pipefail
+          want=$(node -p "require('./package.json').version")
+          for dir in react-native-purchases-ui react-native-purchases-store-galaxy; do
+            v=$(node -p "require('./$dir/package.json').version")
+            [ "$v" = "$want" ] || { echo "::error::$dir/package.json has $v, package.json has $want"; exit 1; }
+          done
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            [ "${GITHUB_REF_NAME%-revenuedot}" = "$want" ] || { echo "::error::tag $GITHUB_REF_NAME expects version ${GITHUB_REF_NAME%-revenuedot}, package.json has $want"; exit 1; }
+          elif [ "$DRY_RUN" != "true" ]; then
+            echo "::error::a real publish must run on a tag <version>-revenuedot (this run is on branch $GITHUB_REF_NAME)"; exit 1
+          fi
+          echo "version $want"
+
+      - name: "Dry run only: resolve unpublished @revenuedot dependencies to the identical upstream releases"
+        if: env.DRY_RUN == 'true'
+        run: |
+          set -euo pipefail
+          node - resolutions package.json react-native-purchases-ui/package.json react-native-purchases-store-galaxy/package.json <<'EOF'
+          const fs = require("fs");
+          const { execFileSync } = require("child_process");
+          const [mode, ...files] = process.argv.slice(2);
+          const published = (name, v) => { try { execFileSync("npm", ["view", `${name}@${v}`, "version"], { stdio: "pipe" }); return true; } catch { return false; } };
+          const resolutions = {};
+          for (const f of files) {
+            const pkg = JSON.parse(fs.readFileSync(f, "utf8"));
+            for (const field of ["dependencies", "devDependencies", "peerDependencies"]) {
+              for (const [dep, spec] of Object.entries(pkg[field] ?? {})) {
+                const m = /^npm:(@revenuedot\/[^@]+)@(.+)$/.exec(String(spec));
+                if (!m || published(m[1], m[2])) continue;
+                const upstream = m[1].replace("@revenuedot/", "@revenuecat/");
+                const next = upstream === dep ? m[2] : `npm:${upstream}@${m[2]}`;
+                console.log(`::warning::${f}: ${m[1]}@${m[2]} is not on npm; this dry run uses ${upstream}@${m[2]}`);
+                if (mode === "resolutions") resolutions[dep] = next; else pkg[field][dep] = next;
+              }
+            }
+            if (mode !== "resolutions") fs.writeFileSync(f, JSON.stringify(pkg, null, 2) + "\n");
+          }
+          if (mode === "resolutions" && Object.keys(resolutions).length) {
+            const root = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            root.resolutions = { ...(root.resolutions ?? {}), ...resolutions };
+            fs.writeFileSync("package.json", JSON.stringify(root, null, 2) + "\n");
+          }
+          EOF
+
+
+      - name: Install (yarn from packageManager; example and e2e apps left out)
+        run: |
+          set -euo pipefail
+          node -e 'const f="package.json",p=JSON.parse(require("fs").readFileSync(f));p.workspaces=p.workspaces.filter(w=>!/example|e2e/.test(w));require("fs").writeFileSync(f,JSON.stringify(p,null,2)+"\n")'
+          # package.json aliases differ from upstream's yarn.lock, so the lockfile cannot be immutable.
+          YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn install --mode=skip-build
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          yarn prepare
+          (cd react-native-purchases-ui && yarn prepare)
+          (cd react-native-purchases-store-galaxy && yarn prepare)
+
+      - name: Unit tests
+        run: yarn test --maxWorkers=2 --silent
+
+      - name: Restore the published package.json files
+        run: |
+          set -euo pipefail
+          git checkout -- package.json react-native-purchases-ui/package.json react-native-purchases-store-galaxy/package.json
+          git diff --exit-code -- package.json react-native-purchases-ui/package.json react-native-purchases-store-galaxy/package.json
+
+      - name: Publish (dependency order; skips versions already on npm)
+        run: |
+          set -euo pipefail
+          publish() {
+            local dir=$1 name version
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already on npm, skipping"; return 0
+            fi
+            echo "== $name@$version"
+            # Built above; --ignore-scripts keeps prepare/prepublishOnly from rebuilding with the dry-run package.json.
+            if [ "$DRY_RUN" = "true" ]; then
+              (cd "$dir" && npm publish --provenance --access public --ignore-scripts --dry-run)
+            else
+              (cd "$dir" && npm publish --provenance --access public --ignore-scripts)
+            fi
+          }
+          publish .
+          publish react-native-purchases-ui
+          publish react-native-purchases-store-galaxy
