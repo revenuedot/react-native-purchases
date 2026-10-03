@@ -1,0 +1,29 @@
+{
+  "$schema": "https://context7.com/schema/context7.json",
+  "projectTitle": "RevenueDot React Native SDK",
+  "description": "RevenueDot's MIT fork of RevenueCat's React Native SDK (works in Expo too), pointed at RevenueDot, the open-source RevenueCat alternative for in-app purchases and subscriptions.",
+  "folders": [],
+  "excludeFolders": [
+    ".circleci",
+    ".github",
+    "fastlane",
+    ".revenuedot",
+    "scripts",
+    "__tests__",
+    "apitesters",
+    "e2e-tests",
+    "examples",
+    ".yarn"
+  ],
+  "excludeFiles": [
+    "CHANGELOG.md",
+    "CHANGELOG.latest.md",
+    "CHANGELOG-LATEST.md"
+  ],
+  "rules": [
+    "Install through npm aliases so every import stays unchanged: \"react-native-purchases\": \"npm:@revenuedot/react-native-purchases@<version>\" and the same for react-native-purchases-ui.",
+    "Keep `import Purchases from \"react-native-purchases\"`. Then run `npx pod-install` (bare React Native) or `npx expo prebuild` (Expo).",
+    "RevenueDot Cloud (https://api.revenuedot.app) is the default API host. For a self-hosted server, call `await Purchases.setProxyURL(\"https://revenuedot.example.com\")` before `Purchases.configure`.",
+    "Pass each app's public key from the RevenueDot dashboard to `Purchases.configure`: appl_ for iOS and goog_ for Android."
+  ]
+}
