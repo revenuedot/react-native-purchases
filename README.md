@@ -1,11 +1,62 @@
-<!-- revenuedot:banner:start -->
-> [!NOTE]
-> **Fork of RevenueCat's MIT SDK, maintained by RevenueDot, not affiliated with RevenueCat.** It keeps the upstream public API (`Purchases.configure`, `Purchases.shared`, every class and method name), so app code and RevenueCat's guides work unchanged. It talks to [RevenueDot](https://github.com/revenuedot/revenuedot) at `https://api.revenuedot.app` by default (`setProxyURL` still points it at a self-hosted server) and verifies RevenueDot's response signatures. RevenueCat's copyright notice is kept in `LICENSE`. Patches: [scripts/forks](https://github.com/revenuedot/revenuedot/tree/main/scripts/forks). **Status: publishing to package registries is in progress.**
->
-> **Install:** keep every import with npm aliases: `"react-native-purchases": "npm:@revenuedot/react-native-purchases@<version>"` and `"react-native-purchases-ui": "npm:@revenuedot/react-native-purchases-ui@<version>"`. The native side pulls `RevenueDotPurchasesHybridCommon` (CocoaPods) and `app.revenuedot.purchases:purchases-hybrid-common` (Maven).
->
-> The upstream README follows, unchanged. Where it says RevenueCat's dashboard or API, use RevenueDot's.
-<!-- revenuedot:banner:end -->
+<!-- revenuedot:readme:start -->
+<p align="center"><a href="https://revenuedot.app"><picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/revenuedot/revenuedot/main/brand/kit/wordmark/revenuedot-lockup-white.svg">
+  <img alt="RevenueDot" src="https://raw.githubusercontent.com/revenuedot/revenuedot/main/brand/kit/wordmark/revenuedot-lockup-black.svg" height="40">
+</picture></a></p>
+
+# RevenueDot React Native SDK
+
+This is RevenueDot's MIT fork of RevenueCat's `react-native-purchases`: the same classes and method names, pointed at a RevenueDot server ([RevenueDot Cloud](https://app.revenuedot.app/signup) at `https://api.revenuedot.app`, or one you host) with RevenueDot's response-signing key built in, and kept in sync with upstream.
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE) [![npm](https://img.shields.io/npm/v/@revenuedot/react-native-purchases?label=npm)](https://www.npmjs.com/package/@revenuedot/react-native-purchases) [![Upstream](https://img.shields.io/badge/upstream-RevenueCat%2Freact--native--purchases_10.10.2-lightgrey)](https://github.com/RevenueCat/react-native-purchases)
+
+## Install
+
+npm aliases keep every `import ... from "react-native-purchases"` as it is:
+```json
+{
+  "dependencies": {
+    "react-native-purchases": "npm:@revenuedot/react-native-purchases@10.10.2",
+    "react-native-purchases-ui": "npm:@revenuedot/react-native-purchases-ui@10.10.2"
+  }
+}
+```
+Then `npx pod-install` (bare React Native) or `npx expo prebuild` (Expo). The native side resolves to RevenueDot's `RevenueDotPurchasesHybridCommon` pod and `app.revenuedot.purchases:purchases-hybrid-common`.
+
+## Configure
+
+```ts
+import { Platform } from "react-native";
+import Purchases from "react-native-purchases";
+
+// Self-hosted server only: RevenueDot Cloud (https://api.revenuedot.app) is the default.
+await Purchases.setProxyURL("https://revenuedot.example.com");
+Purchases.configure({ apiKey: Platform.OS === "ios" ? "appl_..." : "goog_..." });   // each app's public key from the RevenueDot dashboard
+```
+
+The fork already trusts RevenueDot's signing key, so no signature or verification setting is needed. Full guide: https://revenuedot.app/docs/sdks/react-native.
+
+## What RevenueDot adds
+
+- **Self-host for free, or use RevenueDot Cloud** free up to $10,000 a month of tracked revenue ([pricing](https://revenuedot.app/pricing)).
+- **The same REST API and webhook payloads** as RevenueCat, so your backend and integrations keep working ([API reference](https://revenuedot.app/docs/api)).
+- **Paywalls, experiments and the Customer Center** built in the RevenueDot dashboard and rendered by this SDK ([guides](https://revenuedot.app/docs/guides)).
+- **A one-line migration:** point the stock SDK at RevenueDot with `setProxyURL`, or install this fork and drop the line ([migration guide](https://revenuedot.app/docs/migrate)).
+
+## Links
+
+- **Docs for this SDK:** https://revenuedot.app/docs/sdks/react-native
+- **Example app:** https://github.com/revenuedot/examples/tree/main/mobile/react-native-expo
+- **Releases and changelog:** https://github.com/revenuedot/react-native-purchases/releases (tags `<upstream version>-revenuedot`; upstream's changes are in `CHANGELOG.md`)
+- **RevenueDot server and dashboard:** https://github.com/revenuedot/revenuedot
+- **Fork pipeline (what we change and how upstream is merged):** https://github.com/revenuedot/revenuedot/tree/main/scripts/forks
+
+RevenueDot is not affiliated with RevenueCat, Inc. RevenueCat's copyright notice stays in `LICENSE`; RevenueDot's changes are MIT too.
+
+---
+
+## Upstream README (RevenueCat's, unchanged)
+<!-- revenuedot:readme:end -->
 
 <h3 align="center">😻 In-App Subscriptions Made Easy 😻</h3>
 
